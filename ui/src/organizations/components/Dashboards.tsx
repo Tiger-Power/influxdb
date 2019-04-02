@@ -119,7 +119,7 @@ class Dashboards extends PureComponent<Props, State> {
       router,
       params: {orgID},
     } = this.props
-    router.push(`/organizations/${orgID}/dashboards/import`)
+    router.push(`/orgs/${orgID}/dashboards/import`)
   }
 
   private summonImportFromTemplateOverlay = (): void => {
@@ -127,7 +127,7 @@ class Dashboards extends PureComponent<Props, State> {
       router,
       params: {orgID},
     } = this.props
-    router.push(`/organizations/${orgID}/dashboards/import/template`)
+    router.push(`/orgs/${orgID}/dashboards/import/template`)
   }
 
   private handleCreateDashboard = async (): Promise<void> => {
