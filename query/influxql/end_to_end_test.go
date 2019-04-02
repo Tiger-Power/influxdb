@@ -249,7 +249,7 @@ func resultsFromQuerier(querier *fluxquerytest.Querier, compiler flux.Compiler) 
 	return decoder.Decode(ioutil.NopCloser(jsonBuf))
 }
 
-func influxQLCompiler(query, filename string) *fluxquerytest.ReplaceSpecCompiler {
+func influxQLCompiler(query, filename string) flux.Compiler {
 	compiler := influxql.NewCompiler(dbrpMappingSvcE2E)
 	compiler.Cluster = "cluster"
 	compiler.DB = "db0"
