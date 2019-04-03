@@ -1554,6 +1554,7 @@ type FloatIntegralReducer struct {
 	interval Interval
 	sum      float64
 	prev     FloatPoint
+	al_start bool  // indicates if current window had an aligned start
 	window   struct {
 		start int64
 		end   int64
@@ -1586,6 +1587,13 @@ func (r *FloatIntegralReducer) AggregateFloat(p *FloatPoint) {
 			} else {
 				r.window.end, r.window.start = r.opt.Window(p.Time)
 			}
+
+			// record if the first point was aligned to the window start
+			if p.Time==r.window.start {
+				r.al_start = true
+			} else {
+				r.al_start = false
+			}
 		}
 		return
 	}
@@ -1603,18 +1611,30 @@ func (r *FloatIntegralReducer) AggregateFloat(p *FloatPoint) {
 			value := linearFloat(r.window.end, r.prev.Time, p.Time, r.prev.Value, p.Value)
 			elapsed := float64(r.window.end-r.prev.Time) / float64(r.interval.Duration)
 			r.sum += 0.5 * (value + r.prev.Value) * elapsed
-
 			r.prev.Value = value
 			r.prev.Time = r.window.end
 		}
 
-		// Emit the current point through the channel and then clear it.
-		r.ch <- FloatPoint{Time: r.window.start, Value: r.sum}
+		// store the time for the output data in case we need to send it
+		output_time:=r.window.start
+
+		// advance the window
 		if r.opt.Ascending {
 			r.window.start, r.window.end = r.opt.Window(p.Time)
 		} else {
 			r.window.end, r.window.start = r.opt.Window(p.Time)
 		}
+
+		// Check for window skips
+		if r.prev.Time==r.window.start {
+         if r.al_start {
+				r.ch <- FloatPoint{Time: output_time, Value: r.sum}
+			}
+			r.al_start = true
+		} else {
+			r.al_start = false
+		}
+
 		r.sum = 0.0
 	}
 
@@ -1646,7 +1666,7 @@ func (r *FloatIntegralReducer) Close() error {
 	// If our last point is at the start time, then discard this point since
 	// there is no area within this bucket. Otherwise, send off what we
 	// currently have as the final point.
-	if !r.prev.Nil && r.prev.Time != r.window.start {
+	if !r.prev.Nil && r.prev.Time != r.window.start && r.opt.Interval.IsZero() {
 		r.ch <- FloatPoint{Time: r.window.start, Value: r.sum}
 	}
 	close(r.ch)
