@@ -1627,7 +1627,7 @@ func (r *FloatIntegralReducer) AggregateFloat(p *FloatPoint) {
 
 		// Check for window skips
 		if r.prev.Time==r.window.start {
-         if r.al_start {
+			if r.al_start {
 				r.ch <- FloatPoint{Time: output_time, Value: r.sum}
 			}
 			r.al_start = true
