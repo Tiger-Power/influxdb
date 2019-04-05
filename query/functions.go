@@ -1604,24 +1604,24 @@ func (r *FloatIntegralReducer) AggregateFloat(p *FloatPoint) {
 	if r.prev.Time == p.Time {
 		r.prev = *p
 		return
-	} else if !r.opt.Interval.IsZero() && ((r.opt.Ascending && p.Time >= r.window.end) || (!r.opt.Ascending && p.Time <= r.window.end)) {
+	} else if !r.opt.Interval.IsZero() && ((r.opt.Ascending && p.Time > r.window.end) || (!r.opt.Ascending && p.Time < r.window.end)) {
 		// If our previous time is not equal to the window, we need to
 		// interpolate the area at the end of this interval.
 		if r.prev.Time != r.window.end {
 			value := linearFloat(r.window.end, r.prev.Time, p.Time, r.prev.Value, p.Value)
-			elapsed := float64(r.window.end-r.prev.Time) / float64(r.interval.Duration)
+			elapsed := math.Abs(float64(r.window.end-r.prev.Time) / float64(r.interval.Duration))
 			r.sum += 0.5 * (value + r.prev.Value) * elapsed
 			r.prev.Value = value
 			r.prev.Time = r.window.end
 		}
 
-		// store the time for the output data in case we need to send it
-		output_time:=r.window.start
-
-		// advance the window
+		var output_time int64
+		// advance the window & store the time for the output data in case we need to send it
 		if r.opt.Ascending {
+			output_time=r.window.start
 			r.window.start, r.window.end = r.opt.Window(p.Time)
 		} else {
+			output_time=r.window.end
 			r.window.end, r.window.start = r.opt.Window(p.Time)
 		}
 
@@ -1639,7 +1639,7 @@ func (r *FloatIntegralReducer) AggregateFloat(p *FloatPoint) {
 	}
 
 	// Normal operation: update the sum using the trapezium rule
-	elapsed := float64(p.Time-r.prev.Time) / float64(r.interval.Duration)
+	elapsed := math.Abs(float64(p.Time-r.prev.Time) / float64(r.interval.Duration))
 	r.sum += 0.5 * (p.Value + r.prev.Value) * elapsed
 	r.prev = *p
 }
@@ -1735,24 +1735,24 @@ func (r *IntegerIntegralReducer) AggregateInteger(p *IntegerPoint) {
 	if r.prev.Time == p.Time {
 		r.prev = *p
 		return
-	} else if (r.opt.Ascending && p.Time >= r.window.end) || (!r.opt.Ascending && p.Time <= r.window.end) {
+	} else if (r.opt.Ascending && p.Time > r.window.end) || (!r.opt.Ascending && p.Time < r.window.end) {
 		// If our previous time is not equal to the window, we need to
 		// interpolate the area at the end of this interval.
 		if r.prev.Time != r.window.end {
 			value = linearFloat(r.window.end, r.prev.Time, p.Time, float64(r.prev.Value), value)
-			elapsed := float64(r.window.end-r.prev.Time) / float64(r.interval.Duration)
+			elapsed := math.Abs(float64(r.window.end-r.prev.Time) / float64(r.interval.Duration))
 			r.sum += 0.5 * (value + float64(r.prev.Value)) * elapsed
 
 			r.prev.Time = r.window.end
 		}
 
-		// store the time for the output data in case we need to send it
-		output_time:=r.window.start
-
-		// advance the window
+		var output_time int64
+		// advance the window & store the time for the output data in case we need to send it
 		if r.opt.Ascending {
+			output_time=r.window.start
 			r.window.start, r.window.end = r.opt.Window(p.Time)
 		} else {
+			output_time=r.window.end
 			r.window.end, r.window.start = r.opt.Window(p.Time)
 		}
 
@@ -1770,7 +1770,7 @@ func (r *IntegerIntegralReducer) AggregateInteger(p *IntegerPoint) {
 	}
 
 	// Normal operation: update the sum using the trapezium rule
-	elapsed := float64(p.Time-r.prev.Time) / float64(r.interval.Duration)
+	elapsed := math.Abs(float64(p.Time-r.prev.Time) / float64(r.interval.Duration))
 	r.sum += 0.5 * (value + float64(r.prev.Value)) * elapsed
 	r.prev = *p
 }
@@ -1866,24 +1866,24 @@ func (r *UnsignedIntegralReducer) AggregateUnsigned(p *UnsignedPoint) {
 	if r.prev.Time == p.Time {
 		r.prev = *p
 		return
-	} else if (r.opt.Ascending && p.Time >= r.window.end) || (!r.opt.Ascending && p.Time <= r.window.end) {
+	} else if (r.opt.Ascending && p.Time > r.window.end) || (!r.opt.Ascending && p.Time < r.window.end) {
 		// If our previous time is not equal to the window, we need to
 		// interpolate the area at the end of this interval.
 		if r.prev.Time != r.window.end {
 			value = linearFloat(r.window.end, r.prev.Time, p.Time, float64(r.prev.Value), value)
-			elapsed := float64(r.window.end-r.prev.Time) / float64(r.interval.Duration)
+			elapsed := math.Abs(float64(r.window.end-r.prev.Time) / float64(r.interval.Duration))
 			r.sum += 0.5 * (value + float64(r.prev.Value)) * elapsed
 
 			r.prev.Time = r.window.end
 		}
 
-		// store the time for the output data in case we need to send it
-		output_time:=r.window.start
-
-		// advance the window
+		var output_time int64
+		// advance the window & store the time for the output data in case we need to send it
 		if r.opt.Ascending {
+			output_time=r.window.start
 			r.window.start, r.window.end = r.opt.Window(p.Time)
 		} else {
+			output_time=r.window.end
 			r.window.end, r.window.start = r.opt.Window(p.Time)
 		}
 
@@ -1900,7 +1900,7 @@ func (r *UnsignedIntegralReducer) AggregateUnsigned(p *UnsignedPoint) {
 	}
 
 	// Normal operation: update the sum using the trapezium rule
-	elapsed := float64(p.Time-r.prev.Time) / float64(r.interval.Duration)
+	elapsed := math.Abs(float64(p.Time-r.prev.Time) / float64(r.interval.Duration))
 	r.sum += 0.5 * (value + float64(r.prev.Value)) * elapsed
 	r.prev = *p
 }
